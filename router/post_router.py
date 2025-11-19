@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Request
 from controller.post_controller import posts
 
-router = APIRouter()
+router = APIRouter(prefix="/post")
 
 @router.get("/posts")
 async def posts_endpoint(
@@ -15,3 +15,14 @@ async def posts_endpoint(
     - 게시글 목록을 페이징 단위로 조회합니다.
     """
     return await posts(request, offset, limit)
+
+
+@router.get("/singin/")
+async def signin_endpoint(
+    request: Request):
+    """
+    회원가입 엔드포인트
+    - GET /singin/
+    - 새로운 사용자를 등록합니다.
+    """
+    return await posts.signin(request)
