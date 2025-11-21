@@ -32,12 +32,12 @@ async def save_item( item_id : int, item : Item ):
 '''
 from fastapi import FastAPI
 import logging
-from router.post_router import router as posts_router
+from router.post_router import router as post_router
 from router.user_router import router as user_router
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI()
-app.include_router(posts_router)
+app.include_router(post_router)
 app.include_router(user_router)
     
 
