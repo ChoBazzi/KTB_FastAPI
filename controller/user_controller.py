@@ -13,7 +13,6 @@ def get_users():
 def get_user(user_id: int):
     if user_id <= 0:
         raise HTTPException(status_code=400, detail="invalid_user_id")
-
     user = user_model.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="user_not_found")
