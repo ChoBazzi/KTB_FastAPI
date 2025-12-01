@@ -1,28 +1,31 @@
 # controller/post_controller.py
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm import Session
+
 from model import post_model
 
 
-def get_posts():
+def get_posts(db: Session):
     # 전체 게시글 목록 반환 (없으면 404)
-    posts = post_model.get_posts()
+    posts = post_model.get_posts(db)
     if not posts:
         raise HTTPException(status_code=404, detail="no_posts_found")
-    return {"data": posts}
+    return {"data": jsonable_encoder(posts)}
 
 
-def get_post(post_id: int):
+def get_post(db: Session, post_id: int):
     # ID로 단일 게시글 조회
     if post_id <= 0:
         raise HTTPException(status_code=400, detail="invalid_post_id")
 
-    post = post_model.get_post_by_id(post_id)
+    post = post_model.get_post_by_id(db, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="post_not_found")
-    return {"data": post}
+    return {"data": jsonable_encoder(post)}
 
 
-def create_post(data: dict):
+def create_post(db: Session, data: dict):
     # 게시글 생성 (제목 중복, 공백 필드 차단)
     title = (data.get("title") or "").strip()
     content = (data.get("content") or "").strip()
@@ -33,20 +36,15 @@ def create_post(data: dict):
         raise HTTPException(status_code=400, detail="missing_required_fields")
 
     # 제목 중복 방지
-    if post_model.get_post_by_title(title):
+    if post_model.get_post_by_title(db, title):
         raise HTTPException(status_code=409, detail="title_already_exists")
 
-    new_post = {
-        "id": len(post_model.get_posts()) + 1,
-        "title": title,
-        "content": content,
-        "author": author,
-    }
-    post_model.add_post(new_post)
-    return {"data": new_post}
+    new_post = {"title": title, "content": content, "author": author}
+    post = post_model.add_post(db, new_post)
+    return {"data": jsonable_encoder(post)}
 
 
-def update_post(post_id: int, data: dict):
+def update_post(db: Session, post_id: int, data: dict):
     # 게시글 수정 (유효성 검증 및 제목 중복 방지)
     if post_id <= 0:
         raise HTTPException(status_code=400, detail="invalid_post_id")
@@ -66,22 +64,22 @@ def update_post(post_id: int, data: dict):
 
     # 제목 중복 체크 (본인 제외)
     if "title" in update_data:
-        existing = post_model.get_post_by_title(update_data["title"])
-        if existing and existing["id"] != post_id:
+        existing = post_model.get_post_by_title(db, update_data["title"])
+        if existing and existing.id != post_id:
             raise HTTPException(status_code=409, detail="title_already_exists")
 
-    post = post_model.update_post(post_id, update_data)
+    post = post_model.update_post(db, post_id, update_data)
     if not post:
         raise HTTPException(status_code=404, detail="post_not_found")
-    return {"data": post}
+    return {"data": jsonable_encoder(post)}
 
 
-def delete_post(post_id: int):
+def delete_post(db: Session, post_id: int):
     # 게시글 삭제
     if post_id <= 0:
         raise HTTPException(status_code=400, detail="invalid_post_id")
 
-    post = post_model.delete_post(post_id)
+    post = post_model.delete_post(db, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="post_not_found")
-    return {"data": post}
+    return {"data": jsonable_encoder(post)}

@@ -1,54 +1,61 @@
-# model/post_model.py
+from sqlalchemy import Column, Integer, String, Text, func
+from sqlalchemy.orm import Session
 
-# 임시 더미 데이터 (DB 대체)
-_posts = [
-    {"id": 1, "title": "Welcome Post", "content": "첫 번째 게시글입니다.", "author": "Alice"},
-    {"id": 2, "title": "Second Post", "content": "두 번째 게시글입니다.", "author": "Bob"},
-]
+from db import Base
 
 
-def get_posts():
-    # 전체 게시글 목록 조회
-    return _posts.copy()  # 외부 수정 방지용 복사본
+class Post(Base):
+    __tablename__ = "posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), unique=True, nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    author = Column(String(100), nullable=False, default="anonymous")
 
 
-def get_post_by_id(post_id: int):
-    # ID로 게시글 조회
-    return next((p for p in _posts if p["id"] == post_id), None)
+def get_posts(db: Session):
+    return db.query(Post).all()
 
 
-def get_post_by_title(title: str):
-    # 제목 비교 시 대소문자/양쪽 공백 무시
+def get_post_by_id(db: Session, post_id: int):
+    return db.query(Post).filter(Post.id == post_id).first()
+
+
+def get_post_by_title(db: Session, title: str):
     normalized = title.strip().lower()
-    return next((p for p in _posts if p["title"].strip().lower() == normalized), None)
+    return (
+        db.query(Post)
+        .filter(func.lower(func.trim(Post.title)) == normalized)
+        .first()
+    )
 
 
-def add_post(post: dict):
-    # 새 게시글 추가
-    _posts.append(post)
+def add_post(db: Session, post_data: dict):
+    post = Post(**post_data)
+    db.add(post)
+    db.commit()
+    db.refresh(post)
     return post
 
 
-def _find_post(post_id: int):
-    # 내부에서만 사용되는 검색 헬퍼
-    for post in _posts:
-        if post["id"] == post_id:
-            return post
-    return None
+def update_post(db: Session, post_id: int, data: dict):
+    post = get_post_by_id(db, post_id)
+    if not post:
+        return None
 
+    for key, value in data.items():
+        setattr(post, key, value)
 
-def update_post(post_id: int, data: dict):
-    # 게시글 내용 업데이트
-    post = _find_post(post_id)
-    if post:
-        post.update(data)
+    db.commit()
+    db.refresh(post)
     return post
 
 
-def delete_post(post_id: int):
-    # 게시글 삭제
-    post = _find_post(post_id)
-    if post:
-        _posts.remove(post)
-        return post
-    return None
+def delete_post(db: Session, post_id: int):
+    post = get_post_by_id(db, post_id)
+    if not post:
+        return None
+
+    db.delete(post)
+    db.commit()
+    return post
