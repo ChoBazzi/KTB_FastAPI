@@ -25,4 +25,4 @@ coverage/
 *.class
 out/
 logs/
-.h5
+*.h5
