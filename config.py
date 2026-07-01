@@ -2,8 +2,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # MySQL 기본값 예시 (환경변수로 덮어씌울 수 있음)
-    database_url: str = "mysql+pymysql://user:password@localhost:3306/ktb_db"
+    # 로컬 실행은 별도 DB 설치 없이 SQLite로 동작하고, 배포 환경에서는
+    # DATABASE_URL 환경변수로 MySQL/PostgreSQL 등을 주입한다.
+    database_url: str = "sqlite:///./ktb_app.db"
+    model_path: str = "resnet50_food.h5"
 
     class Config:
         env_file = ".env"
